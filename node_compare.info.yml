@@ -1,0 +1,6 @@
+name: Node Compare
+type: module
+description: 'Allows user to compare specified fields of selected nodes'
+package: Development
+core: 8.x
+configure: node_compare.form

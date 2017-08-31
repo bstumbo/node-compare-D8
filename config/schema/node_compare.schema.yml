@@ -1,0 +1,14 @@
+node_compare.settings:
+  type: config_object
+  label: 'Node Compare settings'
+  description: 'Module settings page.'
+  mapping:
+    node_compare:
+      type: mapping
+      mapping:
+        items_limit:
+          type: text
+          label: 'Max. number of compared items'
+        source_text:
+          type: text
+          label: 'Source text for lorem ipsum generation:'
