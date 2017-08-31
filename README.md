@@ -1,6 +1,6 @@
 DESCRIPTION
 
-This module is the Drupal 8 version of Drupal 7's Node Compare module by Dalay
+This module is the Drupal 8 version of Drupal 7's Node Compare module (https://www.drupal.org/project/node_compare) by Dalay
 (http://www.drupalka.ru/).
 
 FEATURES
