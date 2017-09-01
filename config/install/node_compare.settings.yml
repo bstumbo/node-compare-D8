@@ -6,4 +6,6 @@ node_compare:
   node_compare_only_diff: 'Show differences only'
   node_compare_empty_field: '&nbsp;'
   node_compare_labels_header: '&nbsp;'
+node_compare_block:
+  name: 'Compare Nodes'
   
