@@ -117,15 +117,17 @@ class NodeCompareForm extends ConfigFormBase {
         foreach ($fields as $field) {
           $field_list[$field->getName()] = $field->getName() . ' (' . $field->getName() . ')';
         }
-        $form['fields'][$type->get('type')]['node_compare_type_' . $type->get('type')] = array(
+        $form['fields'][$type->get('type')]['node_compare_' . $type->get('type')] = array(
           '#type' => 'checkboxes',
+          '#return_value' => 1,
           '#options' => $field_list,
-          '#default_value' => $config->get('node_compare_type_' . $type->get('type')),
+          '#default_value' => $config->get('node_compare.node_compare_' . $type->get('type')),
+
         );
       } 
     }
   }
-    
+
    return parent::buildForm($form, $form_state);
   }
   
@@ -143,28 +145,9 @@ class NodeCompareForm extends ConfigFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $config = $this->config('node_compare.settings');
     
-    foreach($form_state->getValue() as $name => $value) {
-      if (is_array($value)){
-        foreach ($value as $name => $value){
-          $config->set('node_compare.' . $name, $value);
-        }
-      } else {
-      $config->set('node_compare.' . $name, $value);
-      
-      }
+    foreach($form_state->getValue() as $field => $name) {
+     $config->set('node_compare.' . $field, $name);
     }
-    
-    #$config->set('node_compare.node_compare_items_limit', $form_state->getValue('node_compare_items_limit'));
-    #$config->set('node_compare.node_compare_show_history', $form_state->getValue('node_compare_show_history'));
-    /* #$config->set('node_compare.texts', $form_state->getValue('texts'));
-    $config->set('node_compare.node_compare_text_add', $form_state->getValue('node_compare_text_add'));
-    $config->set('node_compare.node_compare_text_remove', $form_state->getValue('node_compare_text_remove'));
-    $config->set('node_compare.node_compare_only_diff', $form_state->getValue('node_compare_only_diff'));
-    $config->set('node_compare.node_compare_empty_field', $form_state->getValue('node_compare_empty_field'));
-    $config->set('node_compare.node_compare_labels_header', $form_state->getValue('node_compare_labels_header')); */
-    #$config->set('node_compare.fields', $form_state->getValue('fields'));
-    
-    #kint($form_state->getValue('node_compare_show_history'));
         
     $config->save();
     return parent::submitForm($form, $form_state);
