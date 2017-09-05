@@ -8,4 +8,6 @@ node_compare:
   node_compare_labels_header: '&nbsp;'
 node_compare_block:
   name: 'Compare Nodes'
+  node_compare_only_diff: 'Show differences'
+
   

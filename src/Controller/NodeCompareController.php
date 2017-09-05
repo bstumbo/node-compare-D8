@@ -17,10 +17,9 @@ class NodeCompareController extends ControllerBase {
    * @return array
    */
   public function content() {
-    return array(
-      '#type' => 'markup',
-      '#markup' => $this->t('Hello, World!'),
-    );
+    return [
+      '#theme' => 'node_compare_display',
+    ];
   }
   
   /**
@@ -46,5 +45,6 @@ class NodeCompareController extends ControllerBase {
   function node_compare_me() {
     
   }
+  
 
 }

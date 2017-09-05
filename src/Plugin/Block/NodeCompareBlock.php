@@ -53,19 +53,20 @@ class NodeCompareBlock extends BlockBase implements BlockPluginInterface {
   
   
   public function build() {
-    return \Drupal::formBuilder()->getForm('Drupal\node_compare\Form\NodeCompareBlockForm');
     
-   /* $config = $this->getConfiguration();
+    $config = $this->getConfiguration();
     
     return array(
-    'node_compare_form' => $form,
     'subject' => t('Content for comparison'),
     'content' => array(
-      '#theme' => 'node_compare_block_content',
+      '#theme' => 'node_compare_display',
+      '#only_diff_checkbox' => 'test',
+      '#comparison_table' => 'test',
       '#prefix' => '<div  id="node-compare-items">',
       '#suffix' => '</div>',
       ),
-    ); */
+    ); 
   }
+  
 
 }

@@ -1,0 +1,31 @@
+<?php
+
+  function node_compare_theme($existing, $type, $theme, $path) {
+    $path = drupal_get_path('module', 'node_compare') . '/theme';
+    
+    return array(
+      'node_compare_display' => [
+        'variables' => array(
+            'comparison_table' => NULL,
+          ),
+        'template' => 'node-compare-template',
+      ],
+      'node_compare_block_content' => [
+        'variables' => [
+          'type' => NULL,
+          'nids' => [],
+        ],
+        'path' => $path,
+      ],
+      'node_compare_toggle_link' => [
+        'variables' => [
+          'nid' => NULL,
+          'block' => FALSE,
+        ],
+        'path' => $path
+      ],
+      
+    );
+    
+  }
+  
