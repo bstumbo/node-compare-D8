@@ -90,7 +90,7 @@ class NodeCompareForm extends ConfigFormBase {
     $form['fields'] = array(
       '#type' => 'fieldset',
       '#title' => t('Types and fields'),
-      '#description' => t("Choose separately for each type of node which fields are allowed to compare.<br />Types of nodes for which you do not select any field, are excluded from the comparison."),
+      '#description' => t("Choose separately for each type of node which fields are allowed to compare.<br />T."),
       '#collapsible' => TRUE,
     );
     
@@ -100,7 +100,7 @@ class NodeCompareForm extends ConfigFormBase {
       
     foreach ($types as $type) {
       $entityManager = \Drupal::service('entity_field.manager');
-      $fields = $entityManager->getFieldDefinitions('node', 'article');
+      $fields = $entityManager->getFieldDefinitions('node', $type->get('type'));
       
     /*
      * Comments needed here
@@ -122,6 +122,7 @@ class NodeCompareForm extends ConfigFormBase {
           '#return_value' => 1,
           '#options' => $field_list,
           '#default_value' => $config->get('node_compare.node_compare_' . $type->get('type')),
+            #'#default_value' => \Drupal::state()->get('node_compare_' . $type->get('type')),
 
         );
       } 
@@ -144,11 +145,14 @@ class NodeCompareForm extends ConfigFormBase {
   
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $config = $this->config('node_compare.settings');
-    
+
     foreach($form_state->getValue() as $field => $name) {
      $config->set('node_compare.' . $field, $name);
+     \Drupal::state()->set('node_compare.' . $field, $name);
     }
-        
+    
+    kint($config);
+    
     $config->save();
     return parent::submitForm($form, $form_state);
   }

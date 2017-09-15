@@ -14,8 +14,8 @@ function node_compare_preprocess_block(&$variables) {
 /**
  * Preprocess for the comparison page.
  */
-function template_preprocess_node_compare_template(&$vars) {
-  $vars['only_diff_checkbox'] = array(
+function template_preprocess_node_compare_template(&$variables) {
+  $variables['only_diff_checkbox'] = array(
     '#type' => 'checkbox',
     '#title' => \Drupal::config('node_compare.settings')->get('node_compare_block.node_compare_only_diff'),
     '#attributes' => array(
@@ -25,16 +25,16 @@ function template_preprocess_node_compare_template(&$vars) {
     '#suffix' => '</div>',
   );
 
-  $vars['comparison_table']['#prefix'] = '<div id="compare-content-wrapper">';
-  $vars['comparison_table']['#suffix'] = '</div>';
-  $vars['comparison_table']['#attributes'] = array(
+  $variables['comparison_table']['#prefix'] = '<div id="compare-content-wrapper">';
+  $variables['comparison_table']['#suffix'] = '</div>';
+  $variables['comparison_table']['#attributes'] = array(
     'id' => 'comparison-table',
   );
-  $vars['comparison_table']['#attached'] = array(
+  /*$variables['comparison_table']['#attached'] = array(
     'js' => array(
       drupal_get_path('module', 'node_compare') . '/theme/compare-table.js',
     ),
-  );
+  );*/
 }
 
 /**
