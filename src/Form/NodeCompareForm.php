@@ -147,8 +147,8 @@ class NodeCompareForm extends ConfigFormBase {
     $config = $this->config('node_compare.settings');
 
     foreach($form_state->getValue() as $field => $name) {
-     $config->set('node_compare.' . $field, $name);
-     \Drupal::state()->set('node_compare.' . $field, $name);
+      $config->set('node_compare.' . $field, $name);
+      \Drupal::state()->set('node_compare.' . $field, $name);
     }
     
     kint($config);

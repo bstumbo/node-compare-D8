@@ -8,6 +8,8 @@
 namespace Drupal\node_compare\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
+use Drupal\Core\Link;
+use Drupal\Core\Url;
 
 class NodeCompareController extends ControllerBase {
 
@@ -162,6 +164,7 @@ class NodeCompareController extends ControllerBase {
   
   
   
+  
   /**
   * Processing for nodes selected for comparison by the current user.
   */
@@ -212,11 +215,51 @@ class NodeCompareController extends ControllerBase {
   
   
   
+  
   function node_compare_sess_clear() {
     if (isset($_SESSION['node_compare'])) {
       unset($_SESSION['node_compare']);
       return TRUE;
     }
     return FALSE;
-  }  
+  }
+  
+  
+  /**
+  * Theming a link to add/remove nodes for compares.
+  */
+  
+  function theme_node_compare_toggle_link($entity) {
+    $id = 'compare-toggle-' . $entity;
+    #$node_added = isset($_SESSION['node_compare']['nids'][$vars['nid']]);
+    $node_added = isset($_SESSION['node_compare']['nids'][$entity]);
+    $action_class = '';
+    $remove_t = \Drupal::state()->get('node_compare_text_remove', 'Remove from comparison');
+  
+    if ($vars['block']) {
+      $id .= '-block';
+      $path = $GLOBALS['base_path'] . 'misc/message-16-error.png';
+      $text = '<img title="' . $remove_t . '" src="' . $path . '">';
+    }
+    else {
+      $text = $node_added ? $remove_t : \Drupal::state()->get('node_compare_text_add', 'Add to compare');
+      $action_class = $node_added ? 'remove' : 'add';
+    }
+    $options = array(
+      'query' => drupal_get_destination(),
+      'html' => TRUE,
+      'attributes' => array(
+        'class' => array('compare-toggle', 'use-ajax', $action_class),
+        'id' => array($id),
+        'rel' => 'nofollow',
+      ),
+    );
+
+    $url = Url::fromRoute('node_compare.toggle', array('node_id' => $entity));
+    $link = Link::fromTextAndUrl($text, $url)->toString();
+    return $link;
+    #return array('text' => $text, 'link' => 'compare/toggle/' . $vars['nid'] . '/nojs', 'options' => $options);
+    #return Link::fromTextandUrl ($text, \Drupal::url('compare/toggle/' . $vars['nid'] . '/nojs')->toString());
+    #return '<a href="http://google.com">Test</a>';
+  }
 }

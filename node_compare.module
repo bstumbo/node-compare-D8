@@ -26,6 +26,8 @@ use \Drupal\Core\Entity\Display\EntityViewDisplayInterface;
           'nid' => NULL,
           'block' => FALSE,
         ],
+        'template' => 'node-compare-toggle-link-template',
+        'file' => 'NodeCompareController.php',
         'path' => $path
       ],
       
@@ -37,7 +39,7 @@ use \Drupal\Core\Entity\Display\EntityViewDisplayInterface;
  * Preprocess for the comparison page.
  */
   
-  function template_preprocess_node_compare_comparison_page(&$vars) {
+ /* function template_preprocess_node_compare_comparison_page(&$vars) {
     $vars['only_diff_checkbox'] = array(
       '#type' => 'checkbox',
       '#title' => variable_get('node_compare_only_diff', 'Show differences'),
@@ -59,26 +61,38 @@ use \Drupal\Core\Entity\Display\EntityViewDisplayInterface;
       ),
     );
   }
-  
+   */
 
   
+  
   /**
- * Implements hook_entity_extra_field_info().
- */
+  * Implements hook_entity_extra_field_info().
+  */
     function node_compare_entity_extra_field_info() {
       $extra = array();
       $type = \Drupal::entityTypeManager()->getStorage('node_type')->loadMultiple();
       foreach ($type as $bundle) {  
-        kint(\Drupal::state()->get('node_compare.node_compare_' . $bundle->get('type'), array()));
-        if (\Drupal::state()->get('node_compare.node_compare_' . $bundle->get('type'), array())){
-          $extra['node'][$bundle->get('type')]['display']['node_compare_link'] = array(
-            'label' => t('My own field'),
-            'description' => t('This is my own pseudo-field'),
+        
+        /* Get current Drupal state of each node compare settings field */
+        
+        $state = \Drupal::state()->get('node_compare.node_compare_' . $bundle->get('type'), array());
+        
+        /* Check that $state array isn't all 0s or empty */
+        
+        $check = array_filter($state);
+        
+        /* Add Node Compare Link to entity type */
+        
+        if (!empty($check)) {
+          $extra['node'][$bundle->get('type')]['display']['node_compare_toggle_link'] = array(
+            'label' => t('Node Compare link'),
+            'description' => t('Link for add/remove nodes for compares.'),
             'weight' => 100,
             'visible' => TRUE,
           );
         }
-      } 
+        
+      }
      
       return $extra;
     }
@@ -87,13 +101,23 @@ use \Drupal\Core\Entity\Display\EntityViewDisplayInterface;
       * Implements hook_ENTITY_TYPE_view().
       */
     function node_compare_node_view(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display, $view_mode, $langcode) {
-      if ($display->getComponent('node_compare_link')) {
-          $build['node_compare_link'] = [
-            'id' => 'node_compare_toggle_link',
-            '#type' => 'checkbox',
-            '#nid' => $entity->id,
-            #'#weight' => $entity['node_compare_link']['weight'],
+      if ($display->getComponent('node_compare_toggle_link')) {
+          $markup = \Drupal\node_compare\Controller\NodeCompareController::theme_node_compare_toggle_link($entity->id());
+          $build['node_compare_toggle_link'] = [
+            '#nid' => $entity->id(),
+            '#markup' => $markup,
         ];
+      kint($markup);
       }
       
-    } 
+    }
+    
+    /**
+    * Implements hook_views_api().
+    */
+    function node_compare_views_api() {
+      return array(
+        'api' => 3,
+        'path' => drupal_get_path('module', 'node_compare') . '/Views',
+      );
+    }
