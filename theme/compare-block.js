@@ -1,6 +1,6 @@
 (function($) {
   if (Drupal.ajax !== undefined) {
-    Drupal.ajax.prototype.commands.node_compare_clear = function(ajax, response, status) {
+    Drupal.AjaxCommands.node_compare_clear = function(ajax, response, status) {
       $('a.compare-toggle.remove')
         .html(response.text)
         .removeClass('remove')

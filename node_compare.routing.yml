@@ -7,11 +7,15 @@ node_compare.form:
     _permission: 'administer site configuration'
 
 node_compare.toggle:
-  path: 'compare/toggle/{node_id}'
+  path: 'compare/toggle/{node}'
   defaults:
     _controller: \Drupal\node_compare\Controller\NodeCompareController::node_compare_ajax_handler
   requirements:
     _permission: 'administer site configuration'
+  options:
+    parameters:
+      node:
+        type: entity:node
 
 node_compare.clear:
   path: 'compare/clear'

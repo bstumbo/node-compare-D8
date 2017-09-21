@@ -10,6 +10,12 @@ namespace Drupal\node_compare\Controller;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Link;
 use Drupal\Core\Url;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\node\NodeInterface;
+use Drupal\Core\Ajax\AjaxResponse;
+use Drupal\Core\Ajax\HtmlCommand;
+use Drupal\Core\Ajax\ReplaceCommand;
+use Symfony\Component\HttpFoundation\Request;
 
 class NodeCompareController extends ControllerBase {
 
@@ -26,34 +32,72 @@ class NodeCompareController extends ControllerBase {
   }
   
   
+  
+   /**
+  * Update session when handling the nodes selected for comparison.
+  *
+  *  NEW CODE
+  */
+  
+  function node_compare_sess_update($type, $nid, $title) {
+    $session = \Drupal::service('user.private_tempstore')->get('node_compare');
+    
+    if (isset($session) && $session->get('type') == $type) {
+      $limit = (int) \Drupal::state()->get('node_compare_items_limit', 0);
+      $node_ids = $session->get('nids');
+      if (isset($node_id[$nid])){
+        $session->get('nids')->destroy();
+        return TRUE;
+      }
+      elseif ($limit && (count($session->get('nids')) >= $limit)) {
+        drupal_set_message(t('Sorry, but you can not compare more than %items_limit items.', array('%items_limit' => $limit)), 'error');
+        return FALSE;
+      }
+    }
+    else {
+
+      $session->set('type', $type);
+      $session->set('nids', array());
+    }
+    $session->set('nids', array($title));
+    return TRUE;
+  }
+  
   /**
   * Add/remove nodes to compare.
   */
   
-  function node_compare_ajax_handler($node, $clear = FALSE, $mode = '') {
+  function node_compare_ajax_handler($node, $clear = FALSE, $mode = '', Request $request) {
     $node_compare_request = &drupal_static('node_compare_request');
-    $updated = $clear ? node_compare_sess_clear() : node_compare_sess_update($node->type, $node->nid, $node->title);
+    $updated = $clear ? $this->node_compare_sess_clear() : $this->node_compare_sess_update($node->getType(), $node->id(), $node->getTitle());
     // Checks ajax mode.
     if ($mode == 'ajax') {
+      $response = new AjaxResponse;
       if ($updated) {
-        $commands[] = ajax_command_html('#node-compare-items', theme('node_compare_block_content'));
+        $response->addCommand(new HtmlCommand('#node-compare-items', theme_node_compare_block_content()));
+        #$commands[] = ajax_command_html('#node-compare-items', theme('node_compare_block_content'));
         if ($clear) {
-          $commands[] = array(
-            'command' => 'node_compare_clear',
-            'text' => variable_get('node_compare_text_add', 'Add to compare'),
-          );
+          $response->addCommand(new HtmlCommand('node_compare_clear'));
+          #$commands[] = array(
+          #  'command' => 'node_compare_clear',
+          #  'text' => \Drupal::state()->get('node_compare_text_add'),
+          #);
         }
         else {
-          $commands[] = ajax_command_replace('#compare-toggle-' . $node->nid, theme('node_compare_toggle_link', array('nid' => $node->nid)));
+          $response->addCommand(new ReplaceCommand('#compare-toggle-' . $node->id(), $this->theme_node_compare_toggle_link($node->id())));
+          #$commands[] = ajax_command_replace('#compare-toggle-' . $node->nid, theme('node_compare_toggle_link', array('nid' => $node->nid)));
         }
       }
-      $page = array('#type' => 'ajax', '#commands' => $commands);
+      
+      #$page = array('#type' => 'ajax', '#commands' => $commands);
       $node_compare_request = TRUE;
-      ajax_deliver($page);
+      #ajax_deliver($page);
+      
+      return $response;
     }
-    // If JS disabled, then redirect the user back to the page where user came from.
+    // If JS disabled, then redirect the user back to the homepage (for now).
     else {
-      drupal_goto();
+      return $this->redirect('<front>');
     }
   }
   
@@ -188,65 +232,42 @@ class NodeCompareController extends ControllerBase {
   
   
   
-  /**
-  * Update session when handling the nodes selected for comparison.
-  */
-  
-  function node_compare_sess_update($type, $nid, $title) {
-    if (isset($_SESSION['node_compare']) && $_SESSION['node_compare']['type'] == $type) {
-      $limit = (int) variable_get('node_compare_items_limit', 0);
-      if (isset($_SESSION['node_compare']['nids'][$nid])) {
-        unset($_SESSION['node_compare']['nids'][$nid]);
-        return TRUE;
-      }
-      elseif ($limit && (count($_SESSION['node_compare']['nids']) >= $limit)) {
-        drupal_set_message(t('Sorry, but you can not compare more than %items_limit items.', array('%items_limit' => $limit)), 'error');
-        return FALSE;
-      }
-    }
-    else {
-      $_SESSION['node_compare']['type'] = $type;
-      $_SESSION['node_compare']['nids'] = array();
-    }
-    $_SESSION['node_compare']['nids'][$nid] = $title;
-    return TRUE;
-  }
-  
-  
-  
-  
-  
   function node_compare_sess_clear() {
-    if (isset($_SESSION['node_compare'])) {
-      unset($_SESSION['node_compare']);
+    $session = \Drupal::service('user.private_tempstore')->get('node_compare');
+    
+    if ($session) {
+      $session->destroy();
       return TRUE;
     }
     return FALSE;
-  }
+  } 
   
   
   /**
   * Theming a link to add/remove nodes for compares.
   */
   
-  function theme_node_compare_toggle_link($entity) {
+  function theme_node_compare_toggle_link($entity, $block = NULL) {
     $id = 'compare-toggle-' . $entity;
-    #$node_added = isset($_SESSION['node_compare']['nids'][$vars['nid']]);
-    $node_added = isset($_SESSION['node_compare']['nids'][$entity]);
+    #$node_added = isset($_SESSION['node_compare']['nids'][$entity]);
+    $session = \Drupal::service('user.private_tempstore')->get('node_compare');
+    $node_added = $session->get('nid');
+    var_dump($node_added);
     $action_class = '';
     $remove_t = \Drupal::state()->get('node_compare_text_remove', 'Remove from comparison');
   
-    if ($vars['block']) {
+    if ($block) {
       $id .= '-block';
-      $path = $GLOBALS['base_path'] . 'misc/message-16-error.png';
-      $text = '<img title="' . $remove_t . '" src="' . $path . '">';
+      $path = 'http://127.0.0.1:4568/drupal8test/web/modules/custom/node_compare/img/message-16-error.png';
+      $text = 'Remove';
+      #$text = '<img title="' . $remove_t . '" src="' . $path . '">';
     }
     else {
       $text = $node_added ? $remove_t : \Drupal::state()->get('node_compare_text_add', 'Add to compare');
       $action_class = $node_added ? 'remove' : 'add';
     }
     $options = array(
-      'query' => drupal_get_destination(),
+      'query' => \Drupal::service('redirect.destination')->getAsArray(),
       'html' => TRUE,
       'attributes' => array(
         'class' => array('compare-toggle', 'use-ajax', $action_class),
@@ -255,11 +276,65 @@ class NodeCompareController extends ControllerBase {
       ),
     );
 
-    $url = Url::fromRoute('node_compare.toggle', array('node_id' => $entity));
+    $url = Url::fromRoute('node_compare.toggle', array('node' => $entity), $options);
     $link = Link::fromTextAndUrl($text, $url)->toString();
+    
     return $link;
-    #return array('text' => $text, 'link' => 'compare/toggle/' . $vars['nid'] . '/nojs', 'options' => $options);
-    #return Link::fromTextandUrl ($text, \Drupal::url('compare/toggle/' . $vars['nid'] . '/nojs')->toString());
-    #return '<a href="http://google.com">Test</a>';
+  
   }
+
+   
+   /**
+   * Theming a block content.
+   */
+  
+  function theme_node_compare_block_content($vars) {
+    $output = '';
+    $session = \Drupal::service('user.private_tempstore')->get('node_compare');
+    $sess_nids = $session->get('nids');
+    var_dump($sess_nids);
+    $sess_history = $session->get('node_compare_history');
+    if (isset($sess_nids)) {
+      $sess = $session->get('nids');
+      $rows = array();
+      foreach ($sess as $nid => $title) {
+        $rows[] = array($title, NodeCompareController::theme_node_compare_toggle_link($nid, $block = TRUE)); 
+      }
+      if (count($sess) > 1) {
+        $options = array(
+          'query' => \Drupal::service('redirect.destination')->getAsArray(),
+          'attributes' => array(
+            'class' => array('compare-block-links'),
+          ),
+        );
+        $links = array();
+        $url = Url::fromUri('internal:/compare/me');
+        $url->setOptions($options);
+        $links[] = Link::fromTextAndUrl('Compare Selected', $url)->toString();
+        $options['query'] = \Drupal::service('redirect.destination')->getAsArray();
+        $options['attributes']['class'][] = 'use-ajax';
+        $nojs_url = Url::fromUri('internal:/compare/clear/nojs');
+        $nojs_url->setOptions($options);
+        $links[] = Link::fromTextAndUrl('Clear', $nojs_url)->toString();
+        #l(t('Clear'), 'compare/clear/nojs', $options);
+        $rows[] = $links;
+      }
+      $elements = array('#type' => 'table', '#header' => NULL, '#rows' => $rows);
+      $output = \Drupal::service('renderer')->render($elements);
+      #$output = theme('table', array('header' => NULL, 'rows' => $rows));
+    }
+    
+    if (isset($sess_history)) {
+      $items = array();
+      foreach ($sess_history as $date => $link) {
+        $items[] = l(format_date($date), $link);
+      }
+      $output .= \Drupal::service('renderer')->render(array('#theme' => 'item-list', '#title' => t('Your recent comparisons:')));
+      #theme('item_list', array('items' => $items, 'title' => t('Your recent comparisons:')));
+    }
+    return $output;
+  }
+
 }
+
+ 

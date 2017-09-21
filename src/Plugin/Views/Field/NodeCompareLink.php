@@ -62,7 +62,6 @@ class NodeCompareLink extends FieldPluginBase {
    */
   public function render(ResultRow $values) {
     $type = $values->{$this->aliases['type']};
-    kint($type);
     #$type = 'article';
     if (\Drupal::state()->get('node_compare_type_' . $type, array())) {
       #return theme('node_compare_toggle_link', array('nid' => $values->{$this->aliases['nid']}));

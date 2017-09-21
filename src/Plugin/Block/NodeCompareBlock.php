@@ -55,13 +55,20 @@ class NodeCompareBlock extends BlockBase implements BlockPluginInterface {
   public function build() {
     
     $config = $this->getConfiguration();
-    
+    $markup = \Drupal\node_compare\Controller\NodeCompareController::theme_node_compare_block_content();
     return array(
     'subject' => t('Content for comparison'),
     'content' => array(
-      '#theme' => 'node_compare_display',
-      '#only_diff_checkbox' => 'test',
-      '#comparison_table' => 'test',
+      '#markup' => $markup,
+      '#variables' => array(
+        'type' => NULL,
+        'nids' => array(),
+      ),
+      '#attached' => array(
+        'library' => array(
+          'node_compare/node-compare',
+        ), 
+      ),
       '#prefix' => '<div  id="node-compare-items">',
       '#suffix' => '</div>',
       ),

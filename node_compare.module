@@ -20,13 +20,14 @@ use \Drupal\Core\Entity\Display\EntityViewDisplayInterface;
           'nids' => [],
         ],
         'path' => $path,
+        'template' => 'node-compare-block-content',
       ],
       'node_compare_toggle_link' => [
         'variables' => [
           'nid' => NULL,
           'block' => FALSE,
         ],
-        'template' => 'node-compare-toggle-link-template',
+        #'template' => 'node-compare-toggle-link-template',
         'file' => 'NodeCompareController.php',
         'path' => $path
       ],
@@ -97,9 +98,10 @@ use \Drupal\Core\Entity\Display\EntityViewDisplayInterface;
       return $extra;
     }
   
-      /**
-      * Implements hook_ENTITY_TYPE_view().
-      */
+    /**
+    * Implements hook_ENTITY_TYPE_view().
+    */
+      
     function node_compare_node_view(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display, $view_mode, $langcode) {
       if ($display->getComponent('node_compare_toggle_link')) {
           $markup = \Drupal\node_compare\Controller\NodeCompareController::theme_node_compare_toggle_link($entity->id());
@@ -107,9 +109,7 @@ use \Drupal\Core\Entity\Display\EntityViewDisplayInterface;
             '#nid' => $entity->id(),
             '#markup' => $markup,
         ];
-      kint($markup);
       }
-      
     }
     
     /**
