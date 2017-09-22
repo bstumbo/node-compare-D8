@@ -39,12 +39,12 @@ class NodeCompareController extends ControllerBase {
   
   function node_compare_sess_update($type, $nid, $title) {
     $session = \Drupal::request()->getSession();
-    #$session = \Drupal::service('user.private_tempstore')->get('node_compare');
     if (isset($session) && $session->get('type') == $type) {
       $limit = (int) \Drupal::state()->get('node_compare_items_limit', 0);
       $node_ids = $session->get('nids');
       if (isset($node_ids[$nid])){
-        $session->remove('nids');
+        unset($node_ids[$nid]);
+        $session->set('nids', $node_ids);
         return TRUE;
       }
       elseif ($limit && (count($session->get('nids')) >= $limit)) {
@@ -75,30 +75,23 @@ class NodeCompareController extends ControllerBase {
       $response = new AjaxResponse;
       if ($updated) {
         $response->addCommand(new HtmlCommand('#node-compare-items', $this->theme_node_compare_block_content()));
-        #$commands[] = ajax_command_html('#node-compare-items', theme('node_compare_block_content'));
         if ($clear) {
-          error_log('clear');
           $response->addCommand(new HtmlCommand('node_compare_clear'));
-          #$commands[] = array(
-          #  'command' => 'node_compare_clear',
-          #  'text' => \Drupal::state()->get('node_compare_text_add'),
-          #);
         }
         else {
           $response->addCommand(new ReplaceCommand('#compare-toggle-' . $node->id(), $this->theme_node_compare_toggle_link($node->id())));
-          #$commands[] = ajax_command_replace('#compare-toggle-' . $node->nid, theme('node_compare_toggle_link', array('nid' => $node->nid)));
         }
       }
-      
-      #$page = array('#type' => 'ajax', '#commands' => $commands);
+    
       $node_compare_request = TRUE;
-      #ajax_deliver($page);
       
       return $response;
     }
     // If JS disabled, then redirect the user back to the homepage (for now).
     else {
+      
       return $this->redirect('<front>');
+    
     }
   }
   
@@ -207,9 +200,6 @@ class NodeCompareController extends ControllerBase {
     
   }
   
-  
-  
-  
   /**
   * Processing for nodes selected for comparison by the current user.
   */
@@ -250,28 +240,22 @@ class NodeCompareController extends ControllerBase {
   
   function theme_node_compare_toggle_link($entity, $block = NULL) {
     $id = 'compare-toggle-' . $entity;
-    #$node_added = isset($_SESSION['node_compare']['nids'][$entity]);
     $session = \Drupal::request()->getSession();
-    #$session = \Drupal::service('user.private_tempstore')->get('node_compare');
     $sess_nids = $session->get('nids');
     $node_added = isset($sess_nids[$entity]);
     $action_class = '';
     $remove_t = \Drupal::state()->get('node_compare_text_remove', 'Remove from comparison');
-  
     if ($block) {
       $id .= '-block';
       $path = 'http://127.0.0.1:4568/drupal8test/web/modules/custom/node_compare/img/message-16-error.png';
       $text = 'Remove';
-      #$text = '<img title="' . $remove_t . '" src="' . $path . '">';
     }
     else {
       $text = $node_added ? $remove_t : \Drupal::state()->get('node_compare_text_add', 'Add to compare');
       $action_class = $node_added ? 'remove' : 'add';
     }
     $options = array(
-      'query' => drupal_get_destination(),
-      #'query' => \Drupal::service('redirect.destination')->getAsArray(),
-      #'fragment' => '/nojs',
+      'query' => \Drupal::service('redirect.destination')->getAsArray(),
       'html' => TRUE,
       'attributes' => array(
         'class' => array('compare-toggle', 'use-ajax', $action_class),
@@ -294,10 +278,8 @@ class NodeCompareController extends ControllerBase {
    */
   
  function theme_node_compare_block_content($vars) {
-    error_log('PLEASE DO NOT');
     $output = '';
     $session = \Drupal::request()->getSession();
-    #$session = \Drupal::service('user.private_tempstore')->get('node_compare');
     $sess_nids = $session->get('nids');
     $sess_history = $session->get('node_compare_history');
     if (isset($sess_nids)) {
@@ -327,7 +309,6 @@ class NodeCompareController extends ControllerBase {
       }
       $elements = array('#type' => 'table', '#header' => NULL, '#rows' => $rows);
       $output = \Drupal::service('renderer')->render($elements);
-      #$output = theme('table', array('header' => NULL, 'rows' => $rows));
     }
     
     if (isset($sess_history)) {
