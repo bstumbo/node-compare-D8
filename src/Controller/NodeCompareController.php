@@ -31,8 +31,6 @@ class NodeCompareController extends ControllerBase {
     ];
   }
   
-  
-  
    /**
   * Update session when handling the nodes selected for comparison.
   *
@@ -40,12 +38,13 @@ class NodeCompareController extends ControllerBase {
   */
   
   function node_compare_sess_update($type, $nid, $title) {
-    $session = \Drupal::service('user.private_tempstore')->get('node_compare');
+    $session = \Drupal::request()->getSession();
+    #$session = \Drupal::service('user.private_tempstore')->get('node_compare');
     if (isset($session) && $session->get('type') == $type) {
       $limit = (int) \Drupal::state()->get('node_compare_items_limit', 0);
       $node_ids = $session->get('nids');
       if (isset($node_ids[$nid])){
-        $session->delete('nids');
+        $session->remove('nids');
         return TRUE;
       }
       elseif ($limit && (count($session->get('nids')) >= $limit)) {
@@ -252,7 +251,8 @@ class NodeCompareController extends ControllerBase {
   function theme_node_compare_toggle_link($entity, $block = NULL) {
     $id = 'compare-toggle-' . $entity;
     #$node_added = isset($_SESSION['node_compare']['nids'][$entity]);
-    $session = \Drupal::service('user.private_tempstore')->get('node_compare');
+    $session = \Drupal::request()->getSession();
+    #$session = \Drupal::service('user.private_tempstore')->get('node_compare');
     $sess_nids = $session->get('nids');
     $node_added = isset($sess_nids[$entity]);
     $action_class = '';
@@ -293,9 +293,11 @@ class NodeCompareController extends ControllerBase {
    * Theming a block content.
    */
   
-  function theme_node_compare_block_content($vars) {
+ function theme_node_compare_block_content($vars) {
+    error_log('PLEASE DO NOT');
     $output = '';
-    $session = \Drupal::service('user.private_tempstore')->get('node_compare');
+    $session = \Drupal::request()->getSession();
+    #$session = \Drupal::service('user.private_tempstore')->get('node_compare');
     $sess_nids = $session->get('nids');
     $sess_history = $session->get('node_compare_history');
     if (isset($sess_nids)) {
@@ -337,7 +339,7 @@ class NodeCompareController extends ControllerBase {
       #theme('item_list', array('items' => $items, 'title' => t('Your recent comparisons:')));
     }
     return $output;
-  }
+  } 
 
 }
 

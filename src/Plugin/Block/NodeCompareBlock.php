@@ -54,14 +54,14 @@ class NodeCompareBlock extends BlockBase implements BlockPluginInterface {
   
   public function build() {
     $config = $this->getConfiguration();
-    $session = \Drupal::service('user.private_tempstore')->get('node_compare');
-    $sess_nids = $session->get('nids');
-    var_dump($sess_nids);
     $markup = \Drupal\node_compare\Controller\NodeCompareController::theme_node_compare_block_content();
     return array(
     'subject' => t('Content for comparison'),
     'content' => array(
-      '#markup' => $markup,
+      '#markup' => $markup, 
+      '#cache' => array(
+        'max-age' => 0,
+      ),
       '#variables' => array(
         'type' => NULL,
         'nids' => array(),
@@ -78,5 +78,3 @@ class NodeCompareBlock extends BlockBase implements BlockPluginInterface {
   }
 }
   
-
-}

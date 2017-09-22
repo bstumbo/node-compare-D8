@@ -1,12 +1,15 @@
 <?php
 
 use Drupal\node\Entity\NodeType;
-use \Drupal\Core\Entity\EntityInterface;
-use \Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\block\Entity\Block;
+use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use Drupal\node_compare\Plugin\Block\NodeCompareBlock;
+
+
 
   function node_compare_theme($existing, $type, $theme, $path) {
-    $path = drupal_get_path('module', 'node_compare') . '/theme';
-    
+    $path = drupal_get_path('module', 'node_compare') . '/templates';
     return array(
       'node_compare_display' => [
         'variables' => array(
@@ -20,7 +23,6 @@ use \Drupal\Core\Entity\Display\EntityViewDisplayInterface;
           'nids' => [],
         ],
         'path' => $path,
-        'template' => 'node-compare-block-content',
       ],
       'node_compare_toggle_link' => [
         'variables' => [
@@ -110,6 +112,14 @@ use \Drupal\Core\Entity\Display\EntityViewDisplayInterface;
             '#markup' => $markup,
         ];
       }
+    }  
+    
+    /*
+     * Build block to show AJAX updates
+     */
+    
+    function node_compare_preprocess_block() {
+    
     }
     
     /**
