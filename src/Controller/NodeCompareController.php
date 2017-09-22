@@ -41,12 +41,11 @@ class NodeCompareController extends ControllerBase {
   
   function node_compare_sess_update($type, $nid, $title) {
     $session = \Drupal::service('user.private_tempstore')->get('node_compare');
-    
     if (isset($session) && $session->get('type') == $type) {
       $limit = (int) \Drupal::state()->get('node_compare_items_limit', 0);
       $node_ids = $session->get('nids');
-      if (isset($node_id[$nid])){
-        $session->get('nids')->destroy();
+      if (isset($node_ids[$nid])){
+        $session->delete('nids');
         return TRUE;
       }
       elseif ($limit && (count($session->get('nids')) >= $limit)) {
@@ -59,7 +58,8 @@ class NodeCompareController extends ControllerBase {
       $session->set('type', $type);
       $session->set('nids', array());
     }
-    $session->set('nids', array($title));
+    $node_ids[$nid] = $title; 
+    $session->set('nids', $node_ids);
     return TRUE;
   }
   
@@ -67,16 +67,18 @@ class NodeCompareController extends ControllerBase {
   * Add/remove nodes to compare.
   */
   
-  function node_compare_ajax_handler($node, $clear = FALSE, $mode = '', Request $request) {
+  function node_compare_ajax_handler($node, $clear = FALSE, Request $request) {
     $node_compare_request = &drupal_static('node_compare_request');
     $updated = $clear ? $this->node_compare_sess_clear() : $this->node_compare_sess_update($node->getType(), $node->id(), $node->getTitle());
     // Checks ajax mode.
-    if ($mode == 'ajax') {
+    $is_ajax = $request->isXmlHttpRequest();
+    if ($is_ajax) {
       $response = new AjaxResponse;
       if ($updated) {
-        $response->addCommand(new HtmlCommand('#node-compare-items', theme_node_compare_block_content()));
+        $response->addCommand(new HtmlCommand('#node-compare-items', $this->theme_node_compare_block_content()));
         #$commands[] = ajax_command_html('#node-compare-items', theme('node_compare_block_content'));
         if ($clear) {
+          error_log('clear');
           $response->addCommand(new HtmlCommand('node_compare_clear'));
           #$commands[] = array(
           #  'command' => 'node_compare_clear',
@@ -251,8 +253,8 @@ class NodeCompareController extends ControllerBase {
     $id = 'compare-toggle-' . $entity;
     #$node_added = isset($_SESSION['node_compare']['nids'][$entity]);
     $session = \Drupal::service('user.private_tempstore')->get('node_compare');
-    $node_added = $session->get('nid');
-    var_dump($node_added);
+    $sess_nids = $session->get('nids');
+    $node_added = isset($sess_nids[$entity]);
     $action_class = '';
     $remove_t = \Drupal::state()->get('node_compare_text_remove', 'Remove from comparison');
   
@@ -267,7 +269,9 @@ class NodeCompareController extends ControllerBase {
       $action_class = $node_added ? 'remove' : 'add';
     }
     $options = array(
-      'query' => \Drupal::service('redirect.destination')->getAsArray(),
+      'query' => drupal_get_destination(),
+      #'query' => \Drupal::service('redirect.destination')->getAsArray(),
+      #'fragment' => '/nojs',
       'html' => TRUE,
       'attributes' => array(
         'class' => array('compare-toggle', 'use-ajax', $action_class),
@@ -275,7 +279,8 @@ class NodeCompareController extends ControllerBase {
         'rel' => 'nofollow',
       ),
     );
-
+    
+    #$url = Url::fromRoute('node_compare.toggle', [], $options);
     $url = Url::fromRoute('node_compare.toggle', array('node' => $entity), $options);
     $link = Link::fromTextAndUrl($text, $url)->toString();
     
@@ -292,7 +297,6 @@ class NodeCompareController extends ControllerBase {
     $output = '';
     $session = \Drupal::service('user.private_tempstore')->get('node_compare');
     $sess_nids = $session->get('nids');
-    var_dump($sess_nids);
     $sess_history = $session->get('node_compare_history');
     if (isset($sess_nids)) {
       $sess = $session->get('nids');
