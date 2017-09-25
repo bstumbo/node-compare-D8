@@ -118,9 +118,7 @@ use Drupal\node_compare\Plugin\Block\NodeCompareBlock;
      * Build block to show AJAX updates
      */
     
-    function node_compare_preprocess_block() {
-    
-    }
+   
     
     /**
     * Implements hook_views_api().

@@ -16,6 +16,7 @@ use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\HtmlCommand;
 use Drupal\Core\Ajax\ReplaceCommand;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\HttpKernelInterface;
 
 class NodeCompareController extends ControllerBase {
 
@@ -66,8 +67,11 @@ class NodeCompareController extends ControllerBase {
   * Add/remove nodes to compare.
   */
   
-  function node_compare_ajax_handler($node, $clear = FALSE, Request $request) {
+  function node_compare_ajax_handler($node = NULL, $clear = FALSE, Request $request) {
     $node_compare_request = &drupal_static('node_compare_request');
+    if ($node == NULL){
+      $clear = TRUE;
+    }
     $updated = $clear ? $this->node_compare_sess_clear() : $this->node_compare_sess_update($node->getType(), $node->id(), $node->getTitle());
     // Checks ajax mode.
     $is_ajax = $request->isXmlHttpRequest();
@@ -102,25 +106,26 @@ class NodeCompareController extends ControllerBase {
   * Generates a page with a comparative table.
   */
   
-  function node_compare_page () {
-    $nids = func_get_args();
-    $type = array_shift($nids);
-
+  function node_compare_page(Request $request) {
+    #$session = \Drupal::request()->getSession();
+    $nids = $request->get('nids');
+    $type = $request->get('type');
     if (($nids_count = count($nids)) && $nids_count > 1) {
       global $user;
       $user_roles = implode('/', array_keys($user->roles));
       $cid = 'node_compare:' . $user_roles . '/' . $type . '/' . implode('/', $nids);
       $output = FALSE;
   
-      if ($cache = cache_get($cid, 'cache_page')) {
+      if ($cache = \Drupal::cache()->get($cid, 'cache_page')) {
         $output = $cache->data;
       }
       else {
-        $limit = variable_get('node_compare_items_limit', 0);
+        $limit = \Drupal::state()->get('node_compare_items_limit', 0);
         // Checking for limit and existence of the type variable.
         if (isset($type) && (!$limit || $nids_count <= $limit)) {
           $header = array();
-          foreach ($nodes = node_load_multiple($nids, array(), TRUE) as $node) {
+          $nodes = \Drupal::entityTypeManager()->getStorage('node_type')->loadMultiple($nids);
+          foreach ($nodes as $node) {
             if (!node_access('view', $node)) {
               return MENU_ACCESS_DENIED;
             }
@@ -134,9 +139,9 @@ class NodeCompareController extends ControllerBase {
             }
           }
           if (count($header) == $nids_count) {
-            $fields = variable_get('node_compare_type_' . $type, array());
+            $fields = \Drupal::state()->get('node_compare_type_' . $type, array());
+            #variable_get('node_compare_type_' . $type, array());
             $rows = array();
-  
             foreach ($fields as $field_name) {
               $field_not_empty = FALSE;
               if ($instance = field_info_instance('node', $field_name, $type)) {
@@ -196,7 +201,7 @@ class NodeCompareController extends ControllerBase {
       }
     }
   
-    return node_compare_me();
+    return $this->node_compare_me();
     
   }
   
@@ -204,30 +209,41 @@ class NodeCompareController extends ControllerBase {
   * Processing for nodes selected for comparison by the current user.
   */
   
-  function node_compare_me() {
-    if (isset($_SESSION['node_compare']['type'], $_SESSION['node_compare']['nids']) && (count($_SESSION['node_compare']['nids']) > 1)) {
-      $sess = $_SESSION['node_compare'];
-  
-      $nids = array_keys($sess['nids']);
-      $nids = '/' . implode('/', $nids);
-      $url = 'compare/type/' . $sess['type'] . $nids;
-      if (variable_get('node_compare_show_history', FALSE)) {
+  function node_compare_me(Request $current_request = NULL) {
+   $session = \Drupal::request()->getSession();
+   $type = $session->get('type');
+   $nids = $session->get('nids');
+    if (isset($type, $nids) && (count($nids) > 1)) {
+      $nids_keys = array_keys($nids);
+      #$nids = '/' . implode('/', $nids_keys);
+      $url = 'compare/type/';
+      if (\Drupal::state()->get('node_compare_show_history', FALSE)) {
         $_SESSION['node_compare_history'][time()] = $url;
         unset($_SESSION['node_compare']);
       }
-      menu_set_active_item($url);
-      return menu_execute_active_handler(NULL, FALSE);
+      #$current_request = \Drupal::request()->getCurrentRequest();
+      $sub_request = Request::create($url, 'GET', $current_request->query->all(), $current_request->cookies->all(), array(), $current_request->server->all());
+      $sub_request->query->set('type', $type);
+      $sub_request->query->set('nids', $nids_keys);
+
+      #menu_set_active_item($url);
+      #return menu_execute_active_handler(NULL, FALSE);
+      return \Drupal::service('http_kernel')->handle($sub_request, HttpKernelInterface::SUB_REQUEST);
     }
     return t('At the moment you are not selected items to compare.');
   }
   
   
   
+  
+  /*
+   * Clear current user session data
+   */
   function node_compare_sess_clear() {
-    $session = \Drupal::service('user.private_tempstore')->get('node_compare');
+    $session = \Drupal::request()->getSession();
     
     if ($session) {
-      $session->destroy();
+      $session->remove('nids');
       return TRUE;
     }
     return FALSE;
@@ -280,47 +296,53 @@ class NodeCompareController extends ControllerBase {
  function theme_node_compare_block_content($vars) {
     $output = '';
     $session = \Drupal::request()->getSession();
-    $sess_nids = $session->get('nids');
-    $sess_history = $session->get('node_compare_history');
-    if (isset($sess_nids)) {
-      $sess = $session->get('nids');
-      $rows = array();
-      foreach ($sess as $nid => $title) {
-        $rows[] = array($title, NodeCompareController::theme_node_compare_toggle_link($nid, $block = TRUE)); 
+    if($session !== NULL){
+      $sess_nids = $session->get('nids');
+      $sess_history = $session->get('node_compare_history');
+      if (isset($sess_nids)) {
+        $sess = $session->get('nids');
+        $rows = array();
+        foreach ($sess as $nid => $title) {
+          $rows[] = array($title, NodeCompareController::theme_node_compare_toggle_link($nid, $block = TRUE)); 
+        }
+        if (count($sess) > 1) {
+          $options = array(
+            'attributes' => array(
+              'class' => array('compare-block-links'),
+            ),
+          );
+          $links = array();
+          $url = Url::fromUri('internal:/compare/me');
+          $url->setOptions($options);
+          $links[] = Link::fromTextAndUrl('Compare Selected', $url)->toString();
+          $options = array(
+            'attributes' => array(
+              'class' => 'use-ajax',
+            ),
+          );
+          #$options['query'] = \Drupal::service('redirect.destination')->getAsArray();
+          #$options['attributes']['class'][] = 'use-ajax';
+          $nojs_url = Url::fromUri('internal:/compare/clear');
+          $nojs_url->setOptions($options);
+          $links[] = Link::fromTextAndUrl('Clear', $nojs_url)->toString();
+          $rows[] = $links;
+        }
+        $elements = array('#type' => 'table', '#header' => NULL, '#rows' => $rows);
+        $output = \Drupal::service('renderer')->render($elements);
       }
-      if (count($sess) > 1) {
-        $options = array(
-          'query' => \Drupal::service('redirect.destination')->getAsArray(),
-          'attributes' => array(
-            'class' => array('compare-block-links'),
-          ),
-        );
-        $links = array();
-        $url = Url::fromUri('internal:/compare/me');
-        $url->setOptions($options);
-        $links[] = Link::fromTextAndUrl('Compare Selected', $url)->toString();
-        $options['query'] = \Drupal::service('redirect.destination')->getAsArray();
-        $options['attributes']['class'][] = 'use-ajax';
-        $nojs_url = Url::fromUri('internal:/compare/clear/nojs');
-        $nojs_url->setOptions($options);
-        $links[] = Link::fromTextAndUrl('Clear', $nojs_url)->toString();
-        #l(t('Clear'), 'compare/clear/nojs', $options);
-        $rows[] = $links;
+      
+      if (isset($sess_history)) {
+        $items = array();
+        foreach ($sess_history as $date => $link) {
+          $items[] = l(format_date($date), $link);
+        }
+        $output .= \Drupal::service('renderer')->render(array('#theme' => 'item-list', '#title' => t('Your recent comparisons:')));
+        #theme('item_list', array('items' => $items, 'title' => t('Your recent comparisons:')));
       }
-      $elements = array('#type' => 'table', '#header' => NULL, '#rows' => $rows);
-      $output = \Drupal::service('renderer')->render($elements);
+      return $output;
     }
-    
-    if (isset($sess_history)) {
-      $items = array();
-      foreach ($sess_history as $date => $link) {
-        $items[] = l(format_date($date), $link);
-      }
-      $output .= \Drupal::service('renderer')->render(array('#theme' => 'item-list', '#title' => t('Your recent comparisons:')));
-      #theme('item_list', array('items' => $items, 'title' => t('Your recent comparisons:')));
-    }
-    return $output;
-  } 
+  
+ }
 
 }
 
