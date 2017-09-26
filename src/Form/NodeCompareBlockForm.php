@@ -27,7 +27,6 @@ class NodeCompareBlockForm extends FormBase {
       '#type' => 'checkbox',
       '#title' => t('Show recent comparisons'),
       '#description' => t('Display the recent comparisons list in the comparison block.'),
-      #'#default_value' => $config->get('node_compare_show_history'),
     );
 
     return $form;

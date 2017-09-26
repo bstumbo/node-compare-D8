@@ -35,8 +35,6 @@ class NodeCompareController extends ControllerBase {
   
    /**
   * Update session when handling the nodes selected for comparison.
-  *
-  *  NEW CODE
   */
   
   function node_compare_sess_update($type, $nid, $title) {
@@ -100,9 +98,6 @@ class NodeCompareController extends ControllerBase {
     }
   }
   
-  
-  
-  
   /**
   * Generates a page with a comparative table.
   */
@@ -127,9 +122,6 @@ class NodeCompareController extends ControllerBase {
           $header = array();
           $nodes = \Drupal::entityTypeManager()->getStorage('node')->loadMultiple($nids);
           foreach ($nodes as $node) {
-            /*if (!node_access('view', $node)) {
-              return MENU_ACCESS_DENIED;
-            }*/ 
             if ($node->getType() == $type) {
               $link_options = array('attributes' => array(
                   'title' => $node->getTitle(),
@@ -139,8 +131,7 @@ class NodeCompareController extends ControllerBase {
               $url = Url::fromUri('internal:/node/' . $node->id());
               $url->setOptions($link_options);
               $link = Link::fromTextAndUrl($node->getTitle(), $url)->toString();
-              $header[$node->id()] = array('data' =>  $link, 'class' => 'item-title');
-              #$header[$node->id()] = array('data' => l($node->title, 'node/' . $node->nid, $link_options), 'class' => 'item-title');
+              $header[$node->id()] = array('data' =>  $link, 'class' => 'item-title');   
             }
           }
           if (count($header) == $nids_count) {
@@ -149,22 +140,11 @@ class NodeCompareController extends ControllerBase {
             foreach ($fields as $field_name) {
               $field_not_empty = FALSE;
               if ($instance = FieldConfig::loadByName('node', $type, $field_name)) {
-                #$display = isset($instance['display']['node_compare']) ? $instance['display']['node_compare'] : $instance['display']['default'];
+                
                 $label_classes = array();
                 $label_classes[] = 'compare-field-label';
-  
-                /*if ($instance->get('label') == 'hidden') {
-                  $instance['label'] = '&nbsp;';
-                  $label_classes[] = 'hidden';
-                }
-                // Prepare translated options if using the i18n_field module.
-                elseif (module_exists('i18n_field')) {
-                  $instance['label'] = i18n_field_translate_property($instance, 'label');
-                } */
-  
-                #$display['label'] = 'hidden';
                 $row = array(array('data' => $instance->get('label'), 'class' => implode(' ', $label_classes)));
-  
+                
                 foreach (array_keys($header) as $nid) {
                   $new_node = \Drupal::entityTypeManager()->getStorage('node')->load($nid);
                   $field = $new_node->$field_name->view(array('label' => 'hidden')); 
@@ -192,7 +172,7 @@ class NodeCompareController extends ControllerBase {
                 '#header' => $header,
                 '#rows' => $rows,
               );
-              #cache_set($cid, $output, 'cache_page', CACHE_TEMPORARY);
+  
             }
           }
           else {
@@ -203,7 +183,6 @@ class NodeCompareController extends ControllerBase {
       if ($output) {
         $elements = array('comparison_table' => $output);
         return $elements;
-        #return theme('node_compare_comparison_page', array('comparison_table' => $output));
       }
     }
   
@@ -227,13 +206,11 @@ class NodeCompareController extends ControllerBase {
         $_SESSION['node_compare_history'][time()] = $url;
         unset($_SESSION['node_compare']);
       }
-      #$current_request = \Drupal::request()->getCurrentRequest();
+      
       $sub_request = Request::create($url, 'GET', $current_request->query->all(), $current_request->cookies->all(), array(), $current_request->server->all());
       $sub_request->query->set('type', $type);
       $sub_request->query->set('nids', $nids_keys);
 
-      #menu_set_active_item($url);
-      #return menu_execute_active_handler(NULL, FALSE);
       return \Drupal::service('http_kernel')->handle($sub_request, HttpKernelInterface::SUB_REQUEST);
     }
     return t('At the moment you are not selected items to compare.');
@@ -326,8 +303,6 @@ class NodeCompareController extends ControllerBase {
               'class' => 'use-ajax',
             ),
           );
-          #$options['query'] = \Drupal::service('redirect.destination')->getAsArray();
-          #$options['attributes']['class'][] = 'use-ajax';
           $nojs_url = Url::fromUri('internal:/compare/clear');
           $nojs_url->setOptions($options);
           $links[] = Link::fromTextAndUrl('Clear', $nojs_url)->toString();
@@ -343,7 +318,6 @@ class NodeCompareController extends ControllerBase {
           $items[] = l(format_date($date), $link);
         }
         $output .= \Drupal::service('renderer')->render(array('#theme' => 'item-list', '#title' => t('Your recent comparisons:')));
-        #theme('item_list', array('items' => $items, 'title' => t('Your recent comparisons:')));
       }
       return $output;
     }

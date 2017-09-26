@@ -29,7 +29,6 @@ use Drupal\node_compare\Plugin\Block\NodeCompareBlock;
           'nid' => NULL,
           'block' => FALSE,
         ],
-        #'template' => 'node-compare-toggle-link-template',
         'file' => 'NodeCompareController.php',
         'path' => $path
       ],
@@ -114,18 +113,3 @@ use Drupal\node_compare\Plugin\Block\NodeCompareBlock;
       }
     }  
     
-    /*
-     * Build block to show AJAX updates
-     */
-    
-   
-    
-    /**
-    * Implements hook_views_api().
-    */
-    function node_compare_views_api() {
-      return array(
-        'api' => 3,
-        'path' => drupal_get_path('module', 'node_compare') . '/Views',
-      );
-    }

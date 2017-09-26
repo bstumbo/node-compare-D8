@@ -122,8 +122,6 @@ class NodeCompareForm extends ConfigFormBase {
           '#return_value' => 1,
           '#options' => $field_list,
           '#default_value' => $config->get('node_compare.node_compare_' . $type->get('type')),
-            #'#default_value' => \Drupal::state()->get('node_compare_' . $type->get('type')),
-
         );
       } 
     }
