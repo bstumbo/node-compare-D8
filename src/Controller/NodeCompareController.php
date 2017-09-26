@@ -15,6 +15,7 @@ use Drupal\node\NodeInterface;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\HtmlCommand;
 use Drupal\Core\Ajax\ReplaceCommand;
+use Drupal\field\Entity\FieldConfig;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 
@@ -107,10 +108,10 @@ class NodeCompareController extends ControllerBase {
   */
   
   function node_compare_page(Request $request) {
-    #$session = \Drupal::request()->getSession();
     $nids = $request->get('nids');
     $type = $request->get('type');
-    if (($nids_count = count($nids)) && $nids_count > 1) {
+    $nids_count = count($nids);
+    if ($nids_count > 1) {
       global $user;
       $user_roles = implode('/', array_keys($user->roles));
       $cid = 'node_compare:' . $user_roles . '/' . $type . '/' . implode('/', $nids);
@@ -124,61 +125,64 @@ class NodeCompareController extends ControllerBase {
         // Checking for limit and existence of the type variable.
         if (isset($type) && (!$limit || $nids_count <= $limit)) {
           $header = array();
-          $nodes = \Drupal::entityTypeManager()->getStorage('node_type')->loadMultiple($nids);
+          $nodes = \Drupal::entityTypeManager()->getStorage('node')->loadMultiple($nids);
           foreach ($nodes as $node) {
-            if (!node_access('view', $node)) {
+            /*if (!node_access('view', $node)) {
               return MENU_ACCESS_DENIED;
-            }
-            if ($node->type == $type) {
+            }*/ 
+            if ($node->getType() == $type) {
               $link_options = array('attributes' => array(
-                  'title' => $node->title,
+                  'title' => $node->getTitle(),
                   'class' => array('compare-item'),
                 ),
               );
-              $header[$node->nid] = array('data' => l($node->title, 'node/' . $node->nid, $link_options), 'class' => 'item-title');
+              $url = Url::fromUri('internal:/node/' . $node->id());
+              $url->setOptions($link_options);
+              $link = Link::fromTextAndUrl($node->getTitle(), $url)->toString();
+              $header[$node->id()] = array('data' =>  $link, 'class' => 'item-title');
+              #$header[$node->id()] = array('data' => l($node->title, 'node/' . $node->nid, $link_options), 'class' => 'item-title');
             }
           }
           if (count($header) == $nids_count) {
-            $fields = \Drupal::state()->get('node_compare_type_' . $type, array());
-            #variable_get('node_compare_type_' . $type, array());
+            $fields = \Drupal::state()->get('node_compare.node_compare_' . $type, array());
             $rows = array();
             foreach ($fields as $field_name) {
               $field_not_empty = FALSE;
-              if ($instance = field_info_instance('node', $field_name, $type)) {
-                $display = isset($instance['display']['node_compare']) ? $instance['display']['node_compare'] : $instance['display']['default'];
-  
+              if ($instance = FieldConfig::loadByName('node', $type, $field_name)) {
+                #$display = isset($instance['display']['node_compare']) ? $instance['display']['node_compare'] : $instance['display']['default'];
                 $label_classes = array();
                 $label_classes[] = 'compare-field-label';
   
-                if ($display['label'] == 'hidden') {
+                /*if ($instance->get('label') == 'hidden') {
                   $instance['label'] = '&nbsp;';
                   $label_classes[] = 'hidden';
                 }
                 // Prepare translated options if using the i18n_field module.
                 elseif (module_exists('i18n_field')) {
                   $instance['label'] = i18n_field_translate_property($instance, 'label');
-                }
+                } */
   
-                $display['label'] = 'hidden';
-                $row = array(array('data' => $instance['label'], 'class' => implode(' ', $label_classes)));
+                #$display['label'] = 'hidden';
+                $row = array(array('data' => $instance->get('label'), 'class' => implode(' ', $label_classes)));
   
                 foreach (array_keys($header) as $nid) {
-                  $field = field_view_field('node', $nodes[$nid], $field_name, $display);
+                  $new_node = \Drupal::entityTypeManager()->getStorage('node')->load($nid);
+                  $field = $new_node->$field_name->view(array('label' => 'hidden')); 
                   if ($field) {
                     $row[] = render($field);
                     $field_not_empty = TRUE;
                   }
                   else {
-                    $row[] = variable_get('node_compare_empty_field', '&nbsp;');
+                    $row[] = \Drupal::state()->get('node_compare_empty_field', '&nbsp;');
                   }
                 }
               }
               if ($field_not_empty) {
-                $rows[$display['weight']] = array('data' => $row, 'class' => array('compare-field-row', $field_name));
+                $rows[] = array('data' => $row, 'class' => array('compare-field-row', $field_name));
               }
             }
             array_unshift($header, array(
-                'data' => variable_get('node_compare_labels_header', '&nbsp;'),
+                'data' => \Drupal::state()->get('node_compare_labels_header', '&nbsp;'),
                 'class' => 'properties-title',
               ));
             if ($rows) {
@@ -188,7 +192,7 @@ class NodeCompareController extends ControllerBase {
                 '#header' => $header,
                 '#rows' => $rows,
               );
-              cache_set($cid, $output, 'cache_page', CACHE_TEMPORARY);
+              #cache_set($cid, $output, 'cache_page', CACHE_TEMPORARY);
             }
           }
           else {
@@ -197,7 +201,9 @@ class NodeCompareController extends ControllerBase {
         }
       }
       if ($output) {
-        return theme('node_compare_comparison_page', array('comparison_table' => $output));
+        $elements = array('comparison_table' => $output);
+        return $elements;
+        #return theme('node_compare_comparison_page', array('comparison_table' => $output));
       }
     }
   
