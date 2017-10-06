@@ -4,14 +4,14 @@ node_compare.form:
     _form: 'Drupal\node_compare\Form\NodeCompareForm'
     _title: 'Node Compare Settings'
   requirements:
-    _permission: 'administer site configuration'
+    _permission: 'access content'
 
 node_compare.toggle:
   path: 'compare/toggle/{node}'
   defaults:
     _controller: \Drupal\node_compare\Controller\NodeCompareController::node_compare_ajax_handler
   requirements:
-    _permission: 'administer site configuration'
+    _permission: 'access content'
   options:
     parameters:
       node:
@@ -22,7 +22,7 @@ node_compare.clear:
   defaults:
     _controller: \Drupal\node_compare\Controller\NodeCompareController::node_compare_ajax_handler
   requirements:
-    _permission: 'administer site configuration'
+    _permission: 'access content'
 
 node_compare.type:
   path: 'compare/type'
@@ -30,7 +30,7 @@ node_compare.type:
     _controller: \Drupal\node_compare\Controller\NodeCompareController::node_compare_page
     _title: 'Comparison Table'
   requirements:
-    _permission: 'administer site configuration'
+    _permission: 'access content'
 
 node_compare.me:
   path: 'compare/me'
@@ -38,4 +38,4 @@ node_compare.me:
     _controller: \Drupal\node_compare\Controller\NodeCompareController::node_compare_me
     _title: 'Comparison Table'
   requirements:
-    _permission: 'administer site configuration'
+    _permission: 'access content'

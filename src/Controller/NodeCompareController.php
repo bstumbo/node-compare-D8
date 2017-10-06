@@ -246,7 +246,6 @@ class NodeCompareController extends ControllerBase {
     $remove_t = \Drupal::state()->get('node_compare_text_remove', 'Remove from comparison');
     if ($block) {
       $id .= '-block';
-      $path = 'http://127.0.0.1:4568/drupal8test/web/modules/custom/node_compare/img/message-16-error.png';
       $text = 'Remove';
     }
     else {
@@ -263,7 +262,6 @@ class NodeCompareController extends ControllerBase {
       ),
     );
     
-    #$url = Url::fromRoute('node_compare.toggle', [], $options);
     $url = Url::fromRoute('node_compare.toggle', array('node' => $entity), $options);
     $link = Link::fromTextAndUrl($text, $url)->toString();
     
